@@ -7,8 +7,8 @@ export class ProductDetailsPage {
 
     constructor(page: Page) {
         this.page = page;
-        this.productTitle = page.getByTestId('product-name');
-        this.productImage = page.getByTestId('product-image');
+        this.productTitle = page.getByTestId('product-nam');
+        this.productImage = page.getByTestId('product-imag');
     }
 
     async expectProductInfoIsVisible() {
