@@ -119,14 +119,14 @@ HEALER_ENABLED=true
 7. **[x] Refactor: adjuntos sin `path`** — en `healer.ts` se añadió `attachmentBuffer()` que lee `attachment.body` (buffer/string) como fallback cuando `testInfo.attach({ body })` no genera archivo (DOM y screenshot).
 8. **[x] Refactor: eliminar `src/healer/config.ts`** — las lecturas `healerEnabled()`, `geminiApiKey()`, `geminiModel()` (antes con `process.loadEnvFile`) pasan inline a `tests/fixtures.ts`.
 9. **[x] `src/healer/report-store.ts`**: persiste `test-results/healing/<testId>.json` y muestra un resumen en consola (con `console.log`). Verificado con spec temporal (roundtrip + sanitización del testId).
-10. **[x] `tests/fixtures.ts`**: `test`/`expect` extendidos con la lógica de `afterEach` (DOM `page-dom` text/html, screenshot explícito si falta adjunto de imagen, disparo del healer si `HEALER_ENABLED` y hubo fallo). Creado: `dotenv` al inicio, env reads inline (`GEMINI_API_KEY` con throw claro si falta y está habilitado), `base.extend({})` + `afterEach`, adjunta `page-dom`/`page-screenshot`, corre `Healer(GeminiClient(...))` y persiste con `saveReport` + `printSummary`.
-11. **[ ] Actualizar `tests/product.spec.ts`**: cambiar el import de `test` para usar el fixture.
-12. **[ ] Validación local (antes de CI)**: con el fallo deliberado activo (selectores `product-nam`/`product-imag` en `ProductDetailsPage.ts`), ejecutar `npx playwright test` y verificar: reporte JSON en `test-results/healing/`, resumen en consola. Ajustar el healer sin tocar CI.
-13. **[ ] CI**: en `.github/workflows/playwright.yml`:
-    - Agregar `GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}` y `HEALER_ENABLED: 'true'` como `env` del paso de tests.
-    - Agregar secret `GEMINI_API_KEY` en el repositorio (Settings → Secrets).
-    - Subir también `test-results/healing/` como artifact.
-    - El fallo deliberado se mantiene activo para validar el healing en CI (no se revierte).
+10. **[x] `tests/fixtures.ts`**: `test`/`expect` extendidos con la lógica de `afterEach` (DOM `page-dom` text/html, screenshot explícito si falta adjunto de imagen, disparo del healer si `HEALER_ENABLED` y hubo fallo`). Creado: `dotenv` al inicio, env reads inline (`GEMINI_API_KEY` con throw claro si falta y está habilitado), `base.extend({})` + `afterEach`, adjunta `page-dom`/`page-screenshot`, corre `Healer(GeminiClient(...))` y persiste con `saveReport` + `printSummary`.
+11. **[x] Actualizar `tests/product.spec.ts`**: cambiar el import de `test` para usar el fixture. Hecho: `import { test, expect } from '../tests/fixtures'`.
+12. **[x] Validación local (antes de CI)**: con el fallo deliberado activo (selectores `product-nam`/`product-imag` en `ProductDetailsPage.ts`), ejecutar `npx playwright test` y verificar: reporte JSON en `test-results/healing/`, resumen en consola. Ajustar el healer sin tocar CI. Completado: test falla → healer genera diagnóstico de causa raíz + fix sugerido con alta confianza.
+13. **[x] CI**: en `.github/workflows/playwright.yml`:
+    - Agregar `GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}` y `HEALER_ENABLED: 'true'` como `env` del paso de tests. **Implementado**.
+    - Agregar secret `GEMINI_API_KEY` en el repositorio (Settings → Secrets). **Pendiente: crear el secret en la consola de GitHub**.
+    - Subir también `test-results/healing/` como artifact. **Implementado**: artifact `healing-reports` añadido al workflow.
+    - El fallo deliberado se mantiene activo para validar el healing en CI (no se revierte). **Mantenido**.
 
 ## 8. Convenciones a respetar (AGENTS.md)
 

@@ -4,11 +4,9 @@ Contexto para retomar el trabajo en el futuro. Complementa `SELF-HEALER-PLAN.md`
 
 ## Estado al cortar la sesión
 
-Refactors terminados (pasos 6–8), `report-store.ts` creado y verificado (paso 9), y `tests/fixtures.ts` creado (paso 10). Faltan:
+Pasos 1-12 completados: todas las dependencias e implementación del self-healer MVP (types.ts, llm-client.ts, prompt-builder.ts, healer.ts, report-store.ts, fixtures.ts, product.spec.ts import). Faltante:
 
-1. **Import en `tests/product.spec.ts`** (paso 11) — usar `'../tests/fixtures'`.
-2. **Validación local** (paso 12) — `npx playwright test` con el fallo deliberado activo.
-3. **CI** (paso 13) — env + artifact healing en `.github/workflows/playwright.yml`.
+1. **CI** (paso 13) — env + artifact healing en `.github/workflows/playwright.yml`. Ya implementado el config de env vars y artifact, falta crear el secret `GEMINI_API_KEY` en GitHub.
 
 ## Inventario actual de `src/healer/`
 
@@ -16,7 +14,7 @@ Refactors terminados (pasos 6–8), `report-store.ts` creado y verificado (paso 
 - `llm-client.ts` — `GeminiClient.generate(request)` vía `@google/genai`.
 - `prompt-builder.ts` — `SYSTEM_PROMPT` + `buildUserPrompt(evidence)` (DOM truncado a ~50 KB).
 - `healer.ts` — `Healer.run(testInfo)`: solo corre si `status` es `failed|timedOut`; arma evidencia, recoge imágenes y DOM, llama al LLM, parsea sugerencia. Helper clave: `attachmentBuffer()` (lee `path` o `body`).
-- `report-store.ts` — `saveReport(report)` (sanitiza testId) + `printSummary(report, path)`.
+- `report-store.ts` — `saveReport(report)` (sanitiza testId) + `printSummary(report, report)`.
 
 ## Decisiones tomadas en sesión (no cambiar sin consenso)
 
@@ -25,7 +23,8 @@ Refactors terminados (pasos 6–8), `report-store.ts` creado y verificado (paso 
 - **Screenshot explícito en el fixture**: el screenshot automático `'only-on-failure'` de Playwright puede adjuntarse después de los hooks; el `afterEach` debe capturar `page.screenshot()` si no hay adjunto de imagen.
 - **Adjuntos creados con `testInfo.attach({ body })` no generan archivo** (`attachment.path` es `undefined`). Por eso `healer.ts` usa `attachmentBuffer()` (fallback a `body`). Al crear el fixture, adjuntar DOM como `page-dom` con `contentType: 'text/html'` para que `collectPageHtml()` lo encuentre.
 - **Fallo deliberado ACTIVO (NO revertir)**: `pages/ProductDetailsPage.ts` usa `product-nam`/`product-imag` (bug intencional, testid real es `product-name`/`product-image`). Se deja para validar el healing en local y en CI.
-- **Validación local ANTES que CI**: probar todo el pipeline localmente (paso 12) antes de tocar `.github/workflows/playwright.yml` (paso 13).
+- **Validación local COMPLETADA (paso 12)**: `npx playwright test` ejecuta correctamente, genera reporte JSON en `test-results/healing/`, resumen en consola con causa raíz y fix sugerido por Gemini. El pipeline completo está validado localmente.
+- **CI CONFIGURADO (paso 13)**: `.github/workflows/playwright.yml` actualizado con `env: GEMINI_API_KEY + HEALER_ENABLED` y artifact `healing-reports`. Pendiente únicamente crear el secret `GEMINI_API_KEY` en GitHub Settings → Secrets → Actions para que el pipeline funcione en CI.
 
 ## Gotchas técnicos descubiertos
 
@@ -35,21 +34,17 @@ Refactors terminados (pasos 6–8), `report-store.ts` creado y verificado (paso 
   - Validación práctica de un módulo: spec temporal bajo `tests/` que importa el módulo y ejecuta asserts, luego se borra. Así se verificó `report-store.ts` (`1 passed`).
 - **`npx playwright test <archivo>`** corre solo un archivo de tests.
 - **Sanitización de testId**: `/` → `_`, `.` → `_`. Ejemplo: `check/__report_store.ts/roundtrip` → `check___report_store_ts_roundtrip.json`.
+- **Import fixture**: `tests/product.spec.ts` debe importar `import { test, expect } from '../tests/fixtures'` para que el `afterEach` de healing funcione.
 
-## Próximo paso concreto (paso 11: import del spec)
+## Próximo paso concreto (paso 13: CI)
 
-- Cambiar en `tests/product.spec.ts`: `import { test, expect } from '@playwright/test'` → `import { test, expect } from '../tests/fixtures'`.
-
-## Detalles de la implementación de `tests/fixtures.ts` (paso 10, ya hecho)
-
-- `disable/enable`: `healerEnabled = process.env.HEALER_ENABLED === 'true'`; early-exit en `afterEach` si el status no es `failed|timedOut` o está deshabilitado.
-- **Throw de `GEMINI_API_KEY` dentro del hook**, no en carga de módulo: así los tests corren normal cuando el healer está deshabilitado y solo falla claro si está habilitado y falta la key. Verificado contra `prompt-builder` no hecho aún.
-- Adjunta `page-dom` (text/html) y `page-screenshot` (image/png) solo si no existe adjunto de imagen previo; `healer.ts` los lee vía `collectPageHtml()`/`collectImages()`.
-- El fixture `test.afterEach` corre por cada intento (incl. retries en CI); solo el último intento se refleja en el resultado final.
-- Pendiente validar el paso 10 en ejecución real (eso es el paso 12).
+- Secret `GEMINI_API_KEY` debe crearse en GitHub: Settings → Secrets → Actions → New repository secret
+- Valor: clave API de Google Gemini
+- El workflow `.github/workflows/playwright.yml` ya tiene el config de env vars y artifact listos
+- Una vez creado el secret, el pipeline ejecutará el healing en CI automaticamente
 
 ## Comandos útiles
 
-- `npx playwright test` — suite (hoy falla por el bug deliberado; esperado).
-- `npx playwright test tests/product.spec.ts` — archivo único.
-- `ls test-results/healing/` — reportes generados (gitignored).
+- `npx playwright test` — suite (fallo deliberado esperado; healing genera reporte JSON)
+- `npx playwright test tests/product.spec.ts` — archivo único
+- `ls test-results/healing/` — reportes generados (gitignored)

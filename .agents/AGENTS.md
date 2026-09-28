@@ -15,13 +15,14 @@
 - Page objects in `pages/`: `HomePage.ts`, `ProductDetailsPage.ts`
 - Tests use `@playwright/test` with `test` and `expect`
 - `product.spec.ts` uses the Page Object pattern (HomePage, ProductDetailsPage)
+- **Import convention**: `import { test, expect } from '../tests/fixtures'` (instead of `@playwright/test`)
 
-## Self-healer (MVP in progress)
+## Self-healer (MVP completed)
 
-- Code in `src/healer/`: `types.ts`, `llm-client.ts`, `prompt-builder.ts`, `healer.ts`
-- Pending: `report-store.ts` and `tests/fixtures.ts` (extended `test` that on failure attaches DOM + screenshot and triggers the healer)
+- Code in `src/healer/`: `types.ts`, `llm-client.ts`, `prompt-builder.ts`, `healer.ts`, `report-store.ts`
+- All MVP steps 1-12 completed; only CI (step 13) pending
 - Env vars (`.env`, gitignored; template in `.env.template`): `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-2.5-flash`, `HEALER_ENABLED=true`
-- Env loaded with `dotenv` (`import 'dotenv/config'`); `HEALER_ENABLED=false` disables Gemini calls (cost control)
+- Env loaded with `dotenv` (`import 'dotenv/config'`) in `tests/fixtures.ts` only; `HEALER_ENABLED=false` disables Gemini calls (cost control)
 - Healer reports written to `test-results/healing/` (gitignored)
 
 ## Key conventions
@@ -32,6 +33,7 @@
 - Retries: 0 locally, 2 on CI (`retries` in config)
 - Reporter: `html` (output in `playwright-report/`)
 - Screenshot: `only-on-failure`; trace: `on-first-retry`
+- **`test.afterEach` in `tests/fixtures.ts`**: captures DOM + screenshot on failure, triggers healer if `HEALER_ENABLED=true`
 
 ## No custom npm scripts
 
