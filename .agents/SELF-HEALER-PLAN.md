@@ -14,7 +14,7 @@ Este proyecto de automatización (`test-playwright`) usa Playwright 1.63 con Typ
 - Page objects: `pages/HomePage.ts`, `pages/ProductDetailsPage.ts`.
 - Config: `fullyParallel: true`, `retries: 0` local / `2` CI, reporter `html`, `screenshot: 'only-on-failure'`, `trace: 'on-first-retry'`.
 - `.env` (gitignored) contiene `GEMINI_API_KEY`, `GEMINI_MODEL` y `HEALER_ENABLED`; hay plantilla versionada en `.env.template`. Instalados: SDK `@google/genai` (^2.23) y `dotenv` (^18).
-- Implementado en `src/healer/`: `types.ts`, `llm-client.ts`, `prompt-builder.ts`, `healer.ts`, `report-store.ts`. Hechos los refactors (carga de env con dotenv centralizada en el fixture, adjuntos con `attachment.body`, `config.ts` eliminado). Pendiente: `tests/fixtures.ts`, import del spec, validación local y CI.
+- Implementado en `src/healer/`: `types.ts`, `llm-client.ts`, `prompt-builder.ts`, `healer.ts`, `report-store.ts`. Hechos los refactors (carga de env con dotenv centralizada en el fixture, adjuntos con `attachment.body`, `config.ts` eliminado). `tests/fixtures.ts` (paso 10) ya creado. Pendiente: import del spec (paso 11), validación local (paso 12) y CI (paso 13).
 - CI: `.github/workflows/playwright.yml` corre `npm ci`, instala browsers y ejecuta los tests; sube `playwright-report/` como artifact.
 
 ## 3. Objetivo
@@ -119,7 +119,7 @@ HEALER_ENABLED=true
 7. **[x] Refactor: adjuntos sin `path`** — en `healer.ts` se añadió `attachmentBuffer()` que lee `attachment.body` (buffer/string) como fallback cuando `testInfo.attach({ body })` no genera archivo (DOM y screenshot).
 8. **[x] Refactor: eliminar `src/healer/config.ts`** — las lecturas `healerEnabled()`, `geminiApiKey()`, `geminiModel()` (antes con `process.loadEnvFile`) pasan inline a `tests/fixtures.ts`.
 9. **[x] `src/healer/report-store.ts`**: persiste `test-results/healing/<testId>.json` y muestra un resumen en consola (con `console.log`). Verificado con spec temporal (roundtrip + sanitización del testId).
-10. **[ ] `tests/fixtures.ts`**: `test`/`expect` extendidos con la lógica de `afterEach` (DOM `page-dom` text/html, screenshot explícito si falta adjunto de imagen, disparo del healer si `HEALER_ENABLED` y hubo fallo).
+10. **[x] `tests/fixtures.ts`**: `test`/`expect` extendidos con la lógica de `afterEach` (DOM `page-dom` text/html, screenshot explícito si falta adjunto de imagen, disparo del healer si `HEALER_ENABLED` y hubo fallo). Creado: `dotenv` al inicio, env reads inline (`GEMINI_API_KEY` con throw claro si falta y está habilitado), `base.extend({})` + `afterEach`, adjunta `page-dom`/`page-screenshot`, corre `Healer(GeminiClient(...))` y persiste con `saveReport` + `printSummary`.
 11. **[ ] Actualizar `tests/product.spec.ts`**: cambiar el import de `test` para usar el fixture.
 12. **[ ] Validación local (antes de CI)**: con el fallo deliberado activo (selectores `product-nam`/`product-imag` en `ProductDetailsPage.ts`), ejecutar `npx playwright test` y verificar: reporte JSON en `test-results/healing/`, resumen en consola. Ajustar el healer sin tocar CI.
 13. **[ ] CI**: en `.github/workflows/playwright.yml`:

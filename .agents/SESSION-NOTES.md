@@ -4,12 +4,11 @@ Contexto para retomar el trabajo en el futuro. Complementa `SELF-HEALER-PLAN.md`
 
 ## Estado al cortar la sesión
 
-Refactors terminados (pasos 6–8) y `report-store.ts` creado y verificado (paso 9). Faltan:
+Refactors terminados (pasos 6–8), `report-store.ts` creado y verificado (paso 9), y `tests/fixtures.ts` creado (paso 10). Faltan:
 
-1. **`tests/fixtures.ts`** (paso 10) — el "pegue": `test` extendido con `afterEach`.
-2. **Import en `tests/product.spec.ts`** (paso 11) — usar `'../tests/fixtures'`.
-3. **Validación local** (paso 12) — `npx playwright test` con el fallo deliberado activo.
-4. **CI** (paso 13) — env + artifact healing en `.github/workflows/playwright.yml`.
+1. **Import en `tests/product.spec.ts`** (paso 11) — usar `'../tests/fixtures'`.
+2. **Validación local** (paso 12) — `npx playwright test` con el fallo deliberado activo.
+3. **CI** (paso 13) — env + artifact healing en `.github/workflows/playwright.yml`.
 
 ## Inventario actual de `src/healer/`
 
@@ -37,15 +36,17 @@ Refactors terminados (pasos 6–8) y `report-store.ts` creado y verificado (paso
 - **`npx playwright test <archivo>`** corre solo un archivo de tests.
 - **Sanitización de testId**: `/` → `_`, `.` → `_`. Ejemplo: `check/__report_store.ts/roundtrip` → `check___report_store_ts_roundtrip.json`.
 
-## Próximo paso concreto (paso 10: `tests/fixtures.ts`)
+## Próximo paso concreto (paso 11: import del spec)
 
-- `import 'dotenv/config'` al inicio; env reads inline (apiKey con throw claro si falta, modelo default `gemini-2.5-flash`).
-- `export const test = base.extend({})` + `test.afterEach(async ({ page }, testInfo) => ...)`:
-  - Early-exit si `status` no es `failed|timedOut` o `HEALER_ENABLED !== 'true'`.
-  - Adjuntar DOM: `testInfo.attach('page-dom', { body: await page.content(), contentType: 'text/html' })`.
-  - Screenshot explícito si no hay adjunto de imagen.
-  - Construir `new Healer(new GeminiClient(apiKey, model))`, `run(testInfo)`, luego `saveReport` + `printSummary`.
-- Re-exportar `expect` desde `@playwright/test`.
+- Cambiar en `tests/product.spec.ts`: `import { test, expect } from '@playwright/test'` → `import { test, expect } from '../tests/fixtures'`.
+
+## Detalles de la implementación de `tests/fixtures.ts` (paso 10, ya hecho)
+
+- `disable/enable`: `healerEnabled = process.env.HEALER_ENABLED === 'true'`; early-exit en `afterEach` si el status no es `failed|timedOut` o está deshabilitado.
+- **Throw de `GEMINI_API_KEY` dentro del hook**, no en carga de módulo: así los tests corren normal cuando el healer está deshabilitado y solo falla claro si está habilitado y falta la key. Verificado contra `prompt-builder` no hecho aún.
+- Adjunta `page-dom` (text/html) y `page-screenshot` (image/png) solo si no existe adjunto de imagen previo; `healer.ts` los lee vía `collectPageHtml()`/`collectImages()`.
+- El fixture `test.afterEach` corre por cada intento (incl. retries en CI); solo el último intento se refleja en el resultado final.
+- Pendiente validar el paso 10 en ejecución real (eso es el paso 12).
 
 ## Comandos útiles
 
